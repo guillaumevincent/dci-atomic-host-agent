@@ -1,0 +1,65 @@
+---
+- name: create Fedora Atomic Host image
+  hosts: localhost
+  tasks:
+    - name: download Atomic Host raw image
+      get_url:
+        url: https://download.fedoraproject.org/pub/alt/atomic/stable/Fedora-Atomic-26-20170821.0/CloudImages/x86_64/images/Fedora-Atomic-26-20170821.0.x86_64.qcow2
+        dest: /tmp/Fedora-Atomic-26-20170821.0.x86_64.qcow2
+    - name: create OS image
+      os_image:
+        name: Fedora-Atomic-26-20170821
+        container_format: bare
+        disk_format: qcow2
+        state: present
+        filename: /tmp/Fedora-Atomic-26-20170821.0.x86_64.qcow2
+    - name: delete Atomic Host raw image
+      file:
+        state: absent
+        path: /tmp/Fedora-Atomic-26-20170821.0.x86_64.qcow2
+
+- name: create Fedora Atomic Host instance
+  hosts: localhost
+  tasks:
+    - name: create fedora atomic instance
+      os_server:
+        state: present
+        name: fedora-atomic-host
+        image: Fedora-Atomic-26-20170821
+        key_name: dci
+        timeout: 200
+        flavor: m1.small
+        floating_ips:
+          - '{{ hostvars.atomic.ansible_ssh_host }}'
+        volume_size: 20
+        security_groups: ['ssh']
+        network: local
+
+
+- name: Download Atomic Host tests
+  hosts: localhost
+  become: yes
+  become_user: dci
+  tasks:
+    - name: download atomic-host-tests
+      git:
+        repo: https://github.com/projectatomic/atomic-host-tests.git
+        dest: ~/atomic-host-tests
+    - name: copy tests runner
+      copy:
+        src: /home/dci/dci-atomic-host-agent/test.sh
+        dest: /home/dci/atomic-host-tests/test.sh
+    - name: copy inventory file
+      copy:
+        src: /home/dci/dci-atomic-host-agent/hosts
+        dest: /home/dci/atomic-host-tests/hosts
+
+- name: Run tests
+  hosts: localhost
+  become: yes
+  become_user: dci
+  tasks:
+    - name: run tests
+      command: bash ./test.sh
+      args:
+        chdir: /home/dci/atomic-host-tests/

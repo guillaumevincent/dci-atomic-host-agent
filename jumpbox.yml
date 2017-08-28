@@ -1,0 +1,86 @@
+---
+- name: create centos vm
+  hosts: localhost
+  tasks:
+    - name: create ssh security group
+      os_security_group:
+        state: present
+        name: ssh
+    - name: edit ssh security group
+      os_security_group_rule:
+        protocol: tcp
+        security_group: ssh
+        port_range_min: 22
+        port_range_max: 22
+        remote_ip_prefix: 0.0.0.0/0
+    - name: create jumpbox
+      os_server:
+        state: present
+        name: jumpbox
+        image: CentOS-7-x86_64-GenericCloud-1701
+        key_name: "{{ OS_KEYPAIR }}"
+        timeout: 200
+        flavor: m1.small
+        floating_ips:
+          - "{{ hostvars.jumpbox.ansible_ssh_host }}"
+        volume_size: 20
+        security_groups: ['ssh']
+        network: local
+
+- name: setup jumbox
+  hosts: jumpbox
+  become: yes
+  become_user: root
+  tasks:
+    - name: install extra packages
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+        - https://packages.distributed-ci.io/dci-release.el7.noarch.rpm
+        - git
+        - vim
+        - gcc
+        - python-pip
+        - python-devel
+    - name: create user dci
+      user:
+        name: dci
+        generate_ssh_key: yes
+    - name: download dci-atomic-host-agent
+      git:
+        repo: https://github.com/guillaumevincent/dci-atomic-host-agent.git
+        dest: /home/dci/dci-atomic-host-agent
+      become: yes
+      become_user: dci
+    - name: install python dependencies
+      pip:
+        requirements: /home/dci/dci-atomic-host-agent/requirements.txt
+    - name: delete dci ssh key in OSP
+      os_keypair:
+        auth:
+          auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
+          username: "{{ lookup('env', 'OS_USERNAME') }}"
+          password: "{{ lookup('env', 'OS_PASSWORD') }}"
+          user_domain_name:  "{{ lookup('env', 'OS_USER_DOMAIN_NAME') }}"
+          project_domain_name:  "{{ lookup('env', 'OS_PROJECT_DOMAIN_NAME') }}"
+          project_name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
+        state: absent
+        name: dci
+    - name: create key in OSP for dci
+      os_keypair:
+        auth:
+          auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
+          username: "{{ lookup('env', 'OS_USERNAME') }}"
+          password: "{{ lookup('env', 'OS_PASSWORD') }}"
+          user_domain_name:  "{{ lookup('env', 'OS_USER_DOMAIN_NAME') }}"
+          project_domain_name:  "{{ lookup('env', 'OS_PROJECT_DOMAIN_NAME') }}"
+          project_name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
+        state: present
+        name: dci
+        public_key_file: /home/dci/.ssh/id_rsa.pub
+    - name: copy openrc.sh
+      copy:
+        src: openrc.sh
+        dest: /home/dci/dci-atomic-host-agent/openrc.sh
