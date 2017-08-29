@@ -5,17 +5,24 @@
  * python3
  * OpenStack Platform
  * OpenStack RC file v3
- * Available ssh key in your OpenStack Platform
+ * Available ssh key in your OpenStack Platform (i.e. OS_KEYPAIR)
  
 ## create virtualenv
     
-    ./create_venv.sh
+    python3 -m venv venv
+    source venv/bin/activate
+    python -m pip install -r requirements.txt
     
 ## Download and source your OpenStack RC file
 
     source ./openrc.sh
 
-## Edit hosts file and replace
+## Create and edit DCI env file
+
+    mv dcirc.sh.example dcirc.sh
+    vim ./dcirc.sh
+
+## Edit hosts inventory file
 
 Edit hosts file and replace `ansible_ssh_host=` variables.
 Use available floating IPs from your OpenStack Platform.
@@ -25,10 +32,12 @@ Use available floating IPs from your OpenStack Platform.
     source venv/bin/activate
     ansible-playbook -i hosts -e OS_KEYPAIR=t460s jumpbox.yml
 
-## ...
+## Jumpbox
 
-    su dci
-    cd /home/dci/dci-atomic-host-agent
-    source ./openrc.sh
-    ansible-playbook -i hosts atomic.yml
+The jumpbox is configured to:
 
+ * download last component from DCI every hour
+ * create VM with the component on OSP
+ * run tests on it
+ * report result to DCI
+ * destroy VM

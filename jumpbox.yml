@@ -1,4 +1,22 @@
 ---
+- name: check
+  hosts: localhost
+  tasks:
+    - name: stat dcirc.sh file
+      stat:
+        path: dcirc.sh
+      register: dci_env_file
+
+    - name: stat openrc.sh file
+      stat:
+        path: openrc.sh
+      register: openrc
+
+    - name: ensure required env files are defined
+      fail:
+        msg: "dcirc.sh file or openrc.sh are required. See README.md"
+      when: (dci_env_file.stat.exists == False) or (openrc.stat.exists == False)
+
 - name: create centos vm
   hosts: localhost
   tasks:
@@ -6,6 +24,7 @@
       os_security_group:
         state: present
         name: ssh
+
     - name: edit ssh security group
       os_security_group_rule:
         protocol: tcp
@@ -13,6 +32,7 @@
         port_range_min: 22
         port_range_max: 22
         remote_ip_prefix: 0.0.0.0/0
+
     - name: create jumpbox
       os_server:
         state: present
@@ -27,6 +47,15 @@
         security_groups: ['ssh']
         network: local
 
+    - name: wait for ssh on jumpbox
+      command: >
+        ssh -oBatchMode=yes -oStrictHostKeyChecking=no
+        centos@{{ hostvars.jumpbox.ansible_ssh_host }} true
+      register: result
+      until: result|success
+      retries: 10
+      delay: 6
+
 - name: setup jumbox
   hosts: jumpbox
   become: yes
@@ -39,25 +68,60 @@
       with_items:
         - https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
         - https://packages.distributed-ci.io/dci-release.el7.noarch.rpm
+        - https://packages.distributed-ci.io/dci-sshpubkeys.el7.noarch.rpm
+        - dci-ansible
         - git
         - vim
         - gcc
         - python-pip
         - python-devel
-    - name: create user dci
-      user:
-        name: dci
-        generate_ssh_key: yes
-    - name: download dci-atomic-host-agent
+
+    - name: temp fix for bug with requests requirement
+      lineinfile:
+        path: /usr/lib/python2.7/site-packages/dciclient-0.3.3-py2.7.egg-info/requires.txt
+        regexp: '^requests'
+        line: 'requests'
+
+    - name: git clone dci-atomic-host-agent
       git:
         repo: https://github.com/guillaumevincent/dci-atomic-host-agent.git
-        dest: /home/dci/dci-atomic-host-agent
+        dest: /home/centos/dci-atomic-host-agent
+        force: yes
       become: yes
-      become_user: dci
+      become_user: centos
+
     - name: install python dependencies
       pip:
-        requirements: /home/dci/dci-atomic-host-agent/requirements.txt
-    - name: delete dci ssh key in OSP
+        requirements: /home/centos/dci-atomic-host-agent/requirements.txt
+
+    - name: copy openrc.sh
+      copy:
+        src: openrc.sh
+        dest: /home/centos/dci-atomic-host-agent/openrc.sh
+      become: yes
+      become_user: centos
+
+    - name: copy dcirc.sh
+      copy:
+        src: dcirc.sh
+        dest: /home/centos/dci-atomic-host-agent/dcirc.sh
+      become: yes
+      become_user: centos
+
+    - name: stat centos id_rsa file
+      stat:
+        path: /home/centos/.ssh/id_rsa
+      register: centos_id_rsa
+      become: yes
+      become_user: centos
+
+    - name: generate SSH keys for centos
+      shell: ssh-keygen -b 2048 -t rsa -f /home/centos/.ssh/id_rsa -q -N ""
+      when: centos_id_rsa.stat.exists == False
+      become: yes
+      become_user: centos
+
+    - name: delete atomic ssh key in OSP
       os_keypair:
         auth:
           auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
@@ -67,7 +131,8 @@
           project_domain_name:  "{{ lookup('env', 'OS_PROJECT_DOMAIN_NAME') }}"
           project_name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
         state: absent
-        name: dci
+        name: centos
+
     - name: create key in OSP for dci
       os_keypair:
         auth:
@@ -78,9 +143,13 @@
           project_domain_name:  "{{ lookup('env', 'OS_PROJECT_DOMAIN_NAME') }}"
           project_name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
         state: present
-        name: dci
-        public_key_file: /home/dci/.ssh/id_rsa.pub
-    - name: copy openrc.sh
-      copy:
-        src: openrc.sh
-        dest: /home/dci/dci-atomic-host-agent/openrc.sh
+        name: centos
+        public_key_file: /home/centos/.ssh/id_rsa.pub
+
+    - name: create cron entry
+      cron:
+        name: "atomic host tests"
+        user: centos
+        minute: "30"
+        hour: "2"
+        job: "bash -c \"cd /home/centos/dci-atomic-host-agent && source ./openrc.sh && source ./dcirc.sh && ansible-playbook -i hosts dci-atomic-host-agent.yml -e topic='Fedora-Atomic-26' -e OS_KEYPAIR=centos\""

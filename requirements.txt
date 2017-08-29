@@ -1,3 +1,5 @@
 ansible
 shade
 python-openstackclient
+junit_xml
+xunitmerge

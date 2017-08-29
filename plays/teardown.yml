@@ -1,0 +1,26 @@
+---
+- name: delete Fedora Atomic Host image
+  os_image:
+    name: '{{ components[0]["name"] }}'
+    state: absent
+  ignore_errors: True
+
+- name: delete Fedora Atomic Host instance
+  os_server:
+    name: fedora-atomic-host
+    state: absent
+  ignore_errors: True
+
+- name: delete atomic entry in known_hosts
+  command: ssh-keygen -R atomic
+  ignore_errors: True
+
+- name: delete atomic ip entry in known_hosts
+  command: ssh-keygen -R "{{ hostvars.atomic.ansible_ssh_host }}"
+  ignore_errors: True
+
+- name: delete known_hosts.old
+  file:
+    state: absent
+    path: ~/.ssh/known_hosts.old
+  ignore_errors: True
