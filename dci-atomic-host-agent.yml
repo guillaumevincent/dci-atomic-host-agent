@@ -10,6 +10,16 @@
     - name: Set  global variables
       set_fact:
         job_id: "{{ job_informations['job_id'] }}"
+        component: "{{ job_informations['components'][0] }}"
+        atomic_host_path: "/tmp/atomic_host_image.qcow2"
+
+- name: download latest component
+  hosts: localhost
+  tasks:
+    - block:
+        - include: dci/download.yml
+      rescue:
+        - include: dci/failure.yml
 
 - name: clean environment
   hosts: localhost
@@ -17,9 +27,9 @@
     - block:
         - include: hooks/clean.yml
           vars:
-            dci_status: 'new'
+            dci_status: 'pre-run'
       rescue:
-        - include: hooks/failure.yml
+        - include: dci/failure.yml
 
 - name: install product
   hosts: localhost
@@ -28,9 +38,8 @@
         - include: hooks/install.yml
           vars:
             dci_status: 'pre-run'
-            component: "{{ job_informations['components'][0] }}"
       rescue:
-        - include: hooks/failure.yml
+        - include: dci/failure.yml
 
 - name: run test
   hosts: localhost
@@ -40,9 +49,19 @@
           vars:
             dci_status: 'running'
       rescue:
-        - include: hooks/failure.yml
+        - include: dci/failure.yml
+
+- name: run DCI test
+  hosts: localhost
+  tasks:
+    - block:
+        - include: dci/test.yml
+          vars:
+            dci_status: 'running'
+      rescue:
+        - include: dci/failure.yml
 
 - name: teardown
   hosts: localhost
   tasks:
-    - include: hooks/success.yml
+    - include: dci/success.yml

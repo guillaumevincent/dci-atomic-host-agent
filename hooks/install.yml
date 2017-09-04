@@ -1,19 +1,4 @@
 ---
-- name: set Atomic Host file path
-  set_fact:
-    atomic_host_path: '/tmp/atomic_host_image.qcow2'
-
-- name: check Atomic Host file exists
-  stat:
-    path: '{{ atomic_host_path }}'
-  register: atomic_host_file
-
-- name: download Atomic Host file if not exists
-  get_url:
-    url: '{{ component["url"] }}'
-    dest: '{{ atomic_host_path }}'
-  when: atomic_host_file.stat.exists == False
-
 - name: create Atomic Host image
   os_image:
     name: atomic_host_image
@@ -35,33 +20,3 @@
     volume_size: 30
     security_groups: ['ssh']
     network: local
-
-- name: wait for ssh on atomic host
-  command: >
-    ssh -oBatchMode=yes -oStrictHostKeyChecking=no
-    fedora@{{ hostvars.atomic.ansible_ssh_host }} true
-  register: result
-  until: result|success
-  retries: 10
-  delay: 6
-
-- name: download atomic-host-tests
-  git:
-    repo: https://github.com/projectatomic/atomic-host-tests.git
-    dest: /tmp/atomic-host-tests
-    force: yes
-
-- name: copy tests runner
-  copy:
-    src: /home/centos/dci-atomic-host-agent/test.sh
-    dest: /tmp/atomic-host-tests/test.sh
-
-- name: copy inventory file
-  copy:
-    src: /home/centos/dci-atomic-host-agent/hosts
-    dest: /tmp/atomic-host-tests/hosts
-
-- name: copy ansible config file
-  copy:
-    src: /home/centos/dci-atomic-host-agent/ansible.cfg
-    dest: /tmp/atomic-host-tests/ansible.cfg

@@ -1,0 +1,32 @@
+---
+- name: check Atomic Host file exists
+  stat:
+    path: '{{ atomic_host_path }}'
+  register: atomic_host_file
+
+- name: download Atomic Host file if not exists
+  get_url:
+    url: '{{ component["url"] }}'
+    dest: '{{ atomic_host_path }}'
+  when: atomic_host_file.stat.exists == False
+
+- name: download atomic-host-tests
+  git:
+    repo: https://github.com/projectatomic/atomic-host-tests.git
+    dest: /tmp/atomic-host-tests
+    force: yes
+
+- name: copy tests runner
+  copy:
+    src: /home/centos/dci-atomic-host-agent/test.sh
+    dest: /tmp/atomic-host-tests/test.sh
+
+- name: copy inventory file
+  copy:
+    src: /home/centos/dci-atomic-host-agent/hosts
+    dest: /tmp/atomic-host-tests/hosts
+
+- name: copy ansible config file
+  copy:
+    src: /home/centos/dci-atomic-host-agent/ansible.cfg
+    dest: /tmp/atomic-host-tests/ansible.cfg

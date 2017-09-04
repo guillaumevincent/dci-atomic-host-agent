@@ -6,7 +6,7 @@
  * OpenStack Platform
  * OpenStack RC file v3
  * Available ssh key in your OpenStack Platform (i.e. OS_KEYPAIR)
- 
+
 ## create virtualenv
     
     python3 -m venv venv

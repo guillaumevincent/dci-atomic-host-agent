@@ -1,18 +1,9 @@
 ---
-- name: run tests
-  command: "bash ./test.sh"
-  args:
-    chdir: /tmp/atomic-host-tests/
-  environment:
-    JUNIT_OUTPUT_DIR: "/tmp/{{job_id}}"
-  ignore_errors: True
-
-- name: Combine JUnit results into single file
-  shell: "xunitmerge /tmp/{{ job_id }}/*.xml /tmp/{{ job_id }}/junit.xml"
-
-- name: Upload the results
-  dci_file:
-    job_id: '{{ job_id }}'
-    path: "/tmp/{{ job_id }}/junit.xml"
-    mime: 'application/junit'
-    name: 'Atomic Host tests'
+- name: wait for ssh on atomic host
+  command: >
+    ssh -oBatchMode=yes -oStrictHostKeyChecking=no
+    fedora@{{ hostvars.atomic.ansible_ssh_host }} true
+  register: result
+  until: result|success
+  retries: 10
+  delay: 6
