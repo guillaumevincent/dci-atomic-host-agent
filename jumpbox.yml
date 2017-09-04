@@ -76,12 +76,6 @@
         - python-pip
         - python-devel
 
-    - name: temp fix for bug with requests requirement
-      lineinfile:
-        path: /usr/lib/python2.7/site-packages/dciclient-0.3.3-py2.7.egg-info/requires.txt
-        regexp: '^requests'
-        line: 'requests'
-
     - name: git clone dci-atomic-host-agent
       git:
         repo: https://github.com/guillaumevincent/dci-atomic-host-agent.git
