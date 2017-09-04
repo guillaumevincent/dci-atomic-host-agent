@@ -1,5 +1,5 @@
 ---
-- name: dci new job
+- name: schedule new job
   hosts: localhost
   tasks:
     - name: schedule a new job
@@ -11,30 +11,39 @@
       set_fact:
         job_id: '{{ job_informations["job_id"] }}'
 
-- name: dci setup
+- name: clean environment
   hosts: localhost
   vars:
     dci_status: 'new'
     components: "{{ job_informations['components'] }}"
   tasks:
     - block:
-        - include: plays/new.yml
+        - include: hooks/clean.yml
       rescue:
-        - include: plays/failure.yml
+        - include: hooks/failure.yml
 
-- name: dci tests
+- name: install product
+  hosts: localhost
+  vars:
+    dci_status: 'pre-run'
+    components: "{{ job_informations['components'] }}"
+  tasks:
+    - block:
+        - include: hooks/install.yml
+      rescue:
+        - include: hooks/failure.yml
+
+- name: run test
   hosts: localhost
   vars:
     dci_status: 'running'
   tasks:
     - block:
-        - include: plays/running.yml
+        - include: hooks/test.yml
       rescue:
-        - include: plays/failure.yml
+        - include: hooks/failure.yml
 
-- name: dci teardown
+- name: teardown
   hosts: localhost
-  vars:
-    dci_status: 'success'
   tasks:
-    - include: plays/teardown.yml
+    - include: hooks/success.yml

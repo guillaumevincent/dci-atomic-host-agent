@@ -1,7 +1,7 @@
 ---
 - name: set Atomic Host file path
   set_fact:
-    atomic_host_path: '/tmp/{{ components[0]["url"] | basename }}'
+    atomic_host_path: '/tmp/atomic_host_image.qcow2'
 
 - name: check Atomic Host file exists
   stat:
@@ -14,25 +14,25 @@
     dest: '{{ atomic_host_path }}'
   when: atomic_host_file.stat.exists == False
 
-- name: create Fedora Atomic Host image
+- name: create Atomic Host image
   os_image:
-    name: '{{ components[0]["name"] }}'
+    name: atomic_host_image
     container_format: bare
     disk_format: qcow2
     state: present
     filename: '{{ atomic_host_path }}'
 
-- name: create fedora atomic instance
+- name: create Atomic Host instance
   os_server:
     state: present
-    name: fedora-atomic-host
-    image: '{{ components[0]["name"] }}'
+    name: atomic_host_instance
+    image: atomic_host_image
     key_name: "{{ OS_KEYPAIR }}"
     timeout: 200
     flavor: m1.small
     floating_ips:
       - '{{ hostvars.atomic.ansible_ssh_host }}'
-    volume_size: 20
+    volume_size: 30
     security_groups: ['ssh']
     network: local
 

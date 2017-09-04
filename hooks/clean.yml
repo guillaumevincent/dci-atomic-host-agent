@@ -1,15 +1,13 @@
 ---
-- name: delete Fedora Atomic Host image
+- name: delete Atomic Host image
   os_image:
-    name: '{{ components[0]["name"] }}'
+    name: atomic_host_image
     state: absent
-  ignore_errors: True
 
-- name: delete Fedora Atomic Host instance
+- name: delete Atomic Host instance
   os_server:
-    name: fedora-atomic-host
+    name: atomic_host_instance
     state: absent
-  ignore_errors: True
 
 - name: delete atomic entry in known_hosts
   command: ssh-keygen -R atomic

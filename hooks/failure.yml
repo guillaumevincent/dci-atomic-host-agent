@@ -1,0 +1,4 @@
+---
+- dci_job:
+    id: "{{ job_id }}"
+    status: 'failure'
