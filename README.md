@@ -34,10 +34,8 @@ Use available floating IPs from your OpenStack Platform.
 
 ## Jumpbox
 
-The jumpbox is configured to:
+The jumpbox is configured to run every day:
 
- * download last component from DCI every hour
- * create VM with the component on OSP
- * run tests on it
- * report result to DCI
- * destroy VM
+ * clean environment
+ * download and create VM with the last qcow2 image on OSP
+ * run tests and send them to DCI

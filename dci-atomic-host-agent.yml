@@ -9,37 +9,36 @@
 
     - name: Set  global variables
       set_fact:
-        job_id: '{{ job_informations["job_id"] }}'
+        job_id: "{{ job_informations['job_id'] }}"
 
 - name: clean environment
   hosts: localhost
-  vars:
-    dci_status: 'new'
-    components: "{{ job_informations['components'] }}"
   tasks:
     - block:
         - include: hooks/clean.yml
+          vars:
+            dci_status: 'new'
       rescue:
         - include: hooks/failure.yml
 
 - name: install product
   hosts: localhost
-  vars:
-    dci_status: 'pre-run'
-    components: "{{ job_informations['components'] }}"
   tasks:
     - block:
         - include: hooks/install.yml
+          vars:
+            dci_status: 'pre-run'
+            component: "{{ job_informations['components'][0] }}"
       rescue:
         - include: hooks/failure.yml
 
 - name: run test
   hosts: localhost
-  vars:
-    dci_status: 'running'
   tasks:
     - block:
         - include: hooks/test.yml
+          vars:
+            dci_status: 'running'
       rescue:
         - include: hooks/failure.yml
 

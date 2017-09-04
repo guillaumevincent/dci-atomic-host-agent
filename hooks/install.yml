@@ -10,7 +10,7 @@
 
 - name: download Atomic Host file if not exists
   get_url:
-    url: '{{ components[0]["url"] }}'
+    url: '{{ component["url"] }}'
     dest: '{{ atomic_host_path }}'
   when: atomic_host_file.stat.exists == False
 
