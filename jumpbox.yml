@@ -102,48 +102,10 @@
       become: yes
       become_user: centos
 
-    - name: stat centos id_rsa file
-      stat:
-        path: /home/centos/.ssh/id_rsa
-      register: centos_id_rsa
-      become: yes
-      become_user: centos
-
-    - name: generate SSH keys for centos
-      shell: ssh-keygen -b 2048 -t rsa -f /home/centos/.ssh/id_rsa -q -N ""
-      when: centos_id_rsa.stat.exists == False
-      become: yes
-      become_user: centos
-
-    - name: delete atomic ssh key in OSP
-      os_keypair:
-        auth:
-          auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
-          username: "{{ lookup('env', 'OS_USERNAME') }}"
-          password: "{{ lookup('env', 'OS_PASSWORD') }}"
-          user_domain_name:  "{{ lookup('env', 'OS_USER_DOMAIN_NAME') }}"
-          project_domain_name:  "{{ lookup('env', 'OS_PROJECT_DOMAIN_NAME') }}"
-          project_name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
-        state: absent
-        name: centos
-
-    - name: create key in OSP for dci
-      os_keypair:
-        auth:
-          auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
-          username: "{{ lookup('env', 'OS_USERNAME') }}"
-          password: "{{ lookup('env', 'OS_PASSWORD') }}"
-          user_domain_name:  "{{ lookup('env', 'OS_USER_DOMAIN_NAME') }}"
-          project_domain_name:  "{{ lookup('env', 'OS_PROJECT_DOMAIN_NAME') }}"
-          project_name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
-        state: present
-        name: centos
-        public_key_file: /home/centos/.ssh/id_rsa.pub
-
     - name: create cron entry
       cron:
         name: "atomic host tests"
         user: centos
         minute: "30"
         hour: "2"
-        job: "bash -c \"cd /home/centos/dci-atomic-host-agent && source ./openrc.sh && source ./dcirc.sh && ansible-playbook -i hosts dci-atomic-host-agent.yml -e topic='Fedora-Atomic-26' -e OS_KEYPAIR=centos\""
+        job: "/home/centos/dci-atomic-host-agent/run.sh"

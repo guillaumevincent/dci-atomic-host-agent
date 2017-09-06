@@ -12,6 +12,8 @@
         job_id: "{{ job_informations['job_id'] }}"
         component: "{{ job_informations['components'][0] }}"
         atomic_host_path: "/tmp/atomic_host_image.qcow2"
+        tests_repository: "https://github.com/projectatomic/atomic-host-tests.git"
+        tests_version: "ca78c6254fdecdc7f85241139fbfcee4992cecde"
 
 - name: download latest component
   hosts: localhost
