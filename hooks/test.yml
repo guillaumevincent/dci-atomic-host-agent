@@ -2,7 +2,7 @@
 - name: wait for ssh on atomic host
   command: >
     ssh -oBatchMode=yes -oStrictHostKeyChecking=no
-    fedora@{{ hostvars.atomic.ansible_ssh_host }} true
+    fedora@{{ SSH_HOST }} true
   register: result
   until: result|success
   retries: 10

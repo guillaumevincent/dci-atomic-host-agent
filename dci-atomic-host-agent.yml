@@ -1,4 +1,21 @@
 ---
+- name: check
+  hosts: localhost
+  become: yes
+  become_user: root
+  tasks:
+    - name: check extra packages are installed
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - git
+        - python-pip
+
+    - name: check extra packages are installed
+      pip:
+        requirements: "{{ playbook_dir }}/requirements.txt"
+
 - name: schedule new job
   hosts: localhost
   tasks:
@@ -11,13 +28,21 @@
       set_fact:
         job_id: "{{ job_informations['job_id'] }}"
         component: "{{ job_informations['components'][0] }}"
-        atomic_host_path: "/tmp/atomic_host_image.qcow2"
-        tests_repository: "https://github.com/projectatomic/atomic-host-tests.git"
-        tests_version: "ca78c6254fdecdc7f85241139fbfcee4992cecde"
+        atomic_image_path: "/tmp/atomic_host_image.qcow2"
+        test_repository: "https://github.com/projectatomic/atomic-host-tests.git"
+        test_version: "master"
 
 - name: download latest component
   hosts: localhost
+  vars:
+    dci_status: 'new'
   tasks:
+    - debug:
+        msg: "{{ job_id }}"
+
+    - debug:
+        msg: "{{ component }}"
+
     - block:
         - include: dci/download.yml
       rescue:
@@ -25,45 +50,47 @@
 
 - name: clean environment
   hosts: localhost
+  vars:
+    dci_status: 'pre-run'
   tasks:
     - block:
         - include: hooks/clean.yml
-          vars:
-            dci_status: 'pre-run'
       rescue:
         - include: dci/failure.yml
 
 - name: install product
   hosts: localhost
+  vars:
+    dci_status: 'pre-run'
   tasks:
     - block:
         - include: hooks/install.yml
-          vars:
-            dci_status: 'pre-run'
       rescue:
         - include: dci/failure.yml
 
 - name: run test
   hosts: localhost
+  vars:
+    dci_status: 'running'
   tasks:
     - block:
         - include: hooks/test.yml
-          vars:
-            dci_status: 'running'
       rescue:
         - include: dci/failure.yml
 
 - name: run DCI test
   hosts: localhost
+  vars:
+    dci_status: 'running'
   tasks:
     - block:
         - include: dci/test.yml
-          vars:
-            dci_status: 'running'
       rescue:
         - include: dci/failure.yml
 
 - name: teardown
   hosts: localhost
+  vars:
+    dci_status: 'success'
   tasks:
     - include: dci/success.yml

@@ -5,18 +5,18 @@
     container_format: bare
     disk_format: qcow2
     state: present
-    filename: '{{ atomic_host_path }}'
+    filename: "{{ atomic_image_path }}"
 
 - name: stat centos id_rsa file
   stat:
-    path: /home/centos/.ssh/id_rsa
+    path: "{{ SSH_PRIVATE_KEY_FILE }}"
   register: centos_id_rsa
 
 - name: generate SSH keys for centos
-  shell: ssh-keygen -b 2048 -t rsa -f /home/centos/.ssh/id_rsa -q -N ""
+  shell: 'ssh-keygen -b 2048 -t rsa -f {{ SSH_PRIVATE_KEY_FILE }} -q -N ""'
   when: centos_id_rsa.stat.exists == False
 
-- name: delete atomic ssh key in OSP
+- name: delete Atomic ssh key in OSP
   os_keypair:
     auth:
       auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
@@ -26,9 +26,9 @@
       project_domain_name:  "{{ lookup('env', 'OS_PROJECT_DOMAIN_NAME') }}"
       project_name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
     state: absent
-    name: centos
+    name: atomic
 
-- name: create key in OSP for centos
+- name: create key in OSP for atomic
   os_keypair:
     auth:
       auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
@@ -38,8 +38,8 @@
       project_domain_name:  "{{ lookup('env', 'OS_PROJECT_DOMAIN_NAME') }}"
       project_name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
     state: present
-    name: centos
-    public_key_file: /home/centos/.ssh/id_rsa.pub
+    name: atomic
+    public_key_file: "{{ SSH_PUBLIC_KEY_FILE }}"
 
 - name: create Atomic Host instance
   os_server:
@@ -50,14 +50,7 @@
     timeout: 200
     flavor: m1.small
     floating_ips:
-      - '{{ hostvars.atomic.ansible_ssh_host }}'
+      - "{{ SSH_HOST }}"
     volume_size: 30
     security_groups: ['ssh']
     network: local
-
-- name: Set atomic VM variables
-  set_fact:
-    atomic_ssh_host: "{{ hostvars.atomic.ansible_ssh_host }}"
-    atomic_ssh_port: "22"
-    atomic_ssh_user: "fedora"
-    atomic_ssh_private_key_file: "/home/centos/.ssh/id_rsa"

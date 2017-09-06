@@ -9,12 +9,8 @@
     name: atomic_host_instance
     state: absent
 
-- name: delete atomic entry in known_hosts
-  command: ssh-keygen -R atomic
-  ignore_errors: True
-
-- name: delete atomic ip entry in known_hosts
-  command: ssh-keygen -R "{{ hostvars.atomic.ansible_ssh_host }}"
+- name: delete SSH_HOST entry in known_hosts
+  command: ssh-keygen -R "{{ SSH_HOST }}"
   ignore_errors: True
 
 - name: delete known_hosts.old

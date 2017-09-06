@@ -1,11 +1,11 @@
 ---
 - name: check Atomic Host file exists
   stat:
-    path: '{{ atomic_host_path }}'
+    path: '{{ atomic_image_path }}'
   register: atomic_host_file
 
 - name: download Atomic Host file if not exists
   get_url:
     url: '{{ component["url"] }}'
-    dest: '{{ atomic_host_path }}'
+    dest: '{{ atomic_image_path }}'
   when: atomic_host_file.stat.exists == False

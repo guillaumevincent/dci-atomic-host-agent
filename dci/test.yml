@@ -1,39 +1,41 @@
 ---
 - name: download atomic-host-tests
   git:
-    repo: '{{ tests_repository }}'
+    repo: '{{ test_repository }}'
     dest: '/tmp/atomic-host-tests'
-    version: '{{ tests_version }}'
+    version: '{{ test_version }}'
     force: yes
 
 - name: add atomic vm in host
   add_host:
     name: "atomic"
-    ansible_ssh_host: "{{ atomic_ssh_host }}"
-    ansible_ssh_port: "{{ atomic_ssh_port | default(22) }}"
-    ansible_ssh_user: "{{ atomic_ssh_user }}"
-    ansible_ssh_private_key_file: "{{ atomic_ssh_private_key_file }}"
+    ansible_ssh_host: "{{ SSH_HOST }}"
+    ansible_ssh_port: "{{ SSH_PORT | default(22) }}"
+    ansible_ssh_user: "{{ SSH_USER }}"
+    ansible_ssh_private_key_file: "{{ SSH_PRIVATE_KEY_FILE }}"
 
 - name: run tests
-  command: 'ansible-playbook -i hosts --limit atomic /tmp/atomic-host-tests/tests/{{ item }}/main.yml'
+  shell: 'ansible-playbook -i hosts --limit atomic tests/{{ item }}/main.yml'
+  args:
+    chdir: /tmp/atomic-host-tests
   environment:
     JUNIT_OUTPUT_DIR: '/tmp/{{ job_id }}'
   with_items:
-    - admin-unlock
-    - docker
-    - docker-build-httpd
-    - docker-swarm
-    - images_cve_scanner
+#    - admin-unlock
+#    - docker
+#    - docker-build-httpd
+#    - docker-swarm
+#    - images_cve_scanner
     - improved-sanity-test
-    - k8-cluster
-    - openshift-ansible-test
-    #- pkg-layering
-    - rpm-ostree
-    - system-containers
-    - unique-machine-id
+#    - k8-cluster
+#    - openshift-ansible-test
+#    - pkg-layering
+#    - rpm-ostree
+#    - system-containers
+#    - unique-machine-id
   ignore_errors: True
 
-- name: Combine JUnit results into single file
+- name: combine JUnit results into single file
   shell: "xunitmerge /tmp/{{ job_id }}/*.xml /tmp/{{ job_id }}/junit.xml"
 
 - name: upload the results
