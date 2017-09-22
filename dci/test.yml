@@ -1,21 +1,35 @@
 ---
+- name: delete atomic-host-tests folder
+  file:
+    state: absent
+    path: '/tmp/atomic-host-tests'
+
 - name: download atomic-host-tests
   git:
-    repo: '{{ test_repository }}'
+    repo: "{{ test['repository'] }}"
     dest: '/tmp/atomic-host-tests'
-    version: '{{ test_version }}'
-    force: yes
+    version: "{{ test['version'] }}"
 
-- name: add atomic vm in host
-  add_host:
-    name: "atomic"
-    ansible_ssh_host: "{{ SSH_HOST }}"
-    ansible_ssh_port: "{{ SSH_PORT | default(22) }}"
-    ansible_ssh_user: "{{ SSH_USER }}"
-    ansible_ssh_private_key_file: "{{ SSH_PRIVATE_KEY_FILE }}"
+- name: copy ansible.cfg
+  copy:
+    src: ansible.cfg
+    dest: /tmp/atomic-host-tests/ansible.cfg
+
+- name: get RHSM variables
+  set_fact:
+    RHSM_USERNAME: "{{ lookup('env', 'RHSM_USERNAME') }}"
+    RHSM_PASSWORD: "{{ lookup('env', 'RHSM_PASSWORD') }}"
+    RHSM_ACTIVATION_KEY: "{{ lookup('env', 'RHSM_ACTIVATION_KEY') }}"
+    RHSM_ORG_ID: "{{ lookup('env', 'RHSM_ORG_ID') }}"
+
+- name: create RHSM file
+  template:
+    src: subscription_data.csv.j2
+    dest: /tmp/atomic-host-tests/roles/redhat_subscription/files/subscription_data.csv
+  when: RHSM_USERNAME != '' or RHSM_ACTIVATION_KEY!= ''
 
 - name: run tests
-  shell: 'ansible-playbook -i hosts --limit atomic tests/{{ item }}/main.yml'
+  shell: "ansible-playbook --user='{{ SSH_USER }}' --private-key='{{ SSH_PRIVATE_KEY_FILE }}' --inventory-file='{{ SSH_HOST }}:{{ SSH_PORT | default(22) }},' tests/{{ item }}/main.yml"
   args:
     chdir: /tmp/atomic-host-tests
   environment:

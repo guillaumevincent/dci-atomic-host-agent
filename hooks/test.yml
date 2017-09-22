@@ -2,8 +2,41 @@
 - name: wait for ssh on atomic host
   command: >
     ssh -oBatchMode=yes -oStrictHostKeyChecking=no
-    fedora@{{ SSH_HOST }} true
+    {{ SSH_USER }}@{{ SSH_HOST }} true
   register: result
   until: result|success
   retries: 10
-  delay: 6
+  delay: 9
+
+#- name: add atomic vm in host
+#  add_host:
+#    name: "atomic"
+#    ansible_host: "{{ SSH_HOST }}"
+#    ansible_port: "{{ SSH_PORT | default(22) }}"
+#    ansible_user: "{{ SSH_USER }}"
+#    ansible_ssh_private_key_file: "{{ SSH_PRIVATE_KEY_FILE }}"
+#
+#- name: get RHSM variables
+#  set_fact:
+#    RHSM_USERNAME: "{{ lookup('env', 'RHSM_USERNAME') }}"
+#    RHSM_PASSWORD: "{{ lookup('env', 'RHSM_PASSWORD') }}"
+#    RHSM_ACTIVATION_KEY: "{{ lookup('env', 'RHSM_ACTIVATION_KEY') }}"
+#    RHSM_ORG_ID: "{{ lookup('env', 'RHSM_ORG_ID') }}"
+#
+#- name: register with subscription-manager with username and password
+#  redhat_subscription:
+#    state: present
+#    username: '{{ RHSM_USERNAME }}'
+#    password: '{{ RHSM_PASSWORD }}'
+#  when: RHSM_USERNAME != "" and RHSM_PASSWORD != ""
+#  delegate_to: atomic
+#  become: true
+#
+#- name: register with subscription-manager with activationkey and org_id
+#  redhat_subscription:
+#    state: present
+#    activationkey: '{{ RHSM_ACTIVATION_KEY }}'
+#    org_id: '{{ RHSM_ORG_ID }}'
+#  when: RHSM_ACTIVATION_KEY != "" and RHSM_ORG_ID != ""
+#  delegate_to: atomic
+#  become: true

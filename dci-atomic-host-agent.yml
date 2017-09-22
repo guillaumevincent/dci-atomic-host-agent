@@ -21,16 +21,15 @@
   tasks:
     - name: schedule a new job
       dci_job:
-        topic: '{{ topic }}'
+        topic: '{{ TOPIC_NAME }}'
       register: job_informations
 
     - name: Set  global variables
       set_fact:
         job_id: "{{ job_informations['job_id'] }}"
         component: "{{ job_informations['components'][0] }}"
-        atomic_image_path: "/tmp/atomic_host_image.qcow2"
-        test_repository: "https://github.com/projectatomic/atomic-host-tests.git"
-        test_version: "master"
+        atomic_image_path: "/tmp/{{ job_informations['components'][0]['name'] }}.qcow2"
+        test: "{{ job_informations['components'][0]['data']['tests'][0] }}"
 
 - name: download latest component
   hosts: localhost

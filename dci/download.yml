@@ -4,8 +4,8 @@
     path: '{{ atomic_image_path }}'
   register: atomic_host_file
 
-- name: download Atomic Host file if not exists
-  get_url:
-    url: '{{ component["url"] }}'
+- name: download component if not exists
+  dci_component:
     dest: '{{ atomic_image_path }}'
+    id: '{{ component["id"] }}'
   when: atomic_host_file.stat.exists == False

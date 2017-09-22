@@ -7,14 +7,14 @@
     state: present
     filename: "{{ atomic_image_path }}"
 
-- name: stat centos id_rsa file
+- name: stat id_rsa file
   stat:
     path: "{{ SSH_PRIVATE_KEY_FILE }}"
-  register: centos_id_rsa
+  register: atomic_id_rsa
 
-- name: generate SSH keys for centos
+- name: generate SSH keys
   shell: 'ssh-keygen -b 2048 -t rsa -f {{ SSH_PRIVATE_KEY_FILE }} -q -N ""'
-  when: centos_id_rsa.stat.exists == False
+  when: atomic_id_rsa.stat.exists == False
 
 - name: delete Atomic ssh key in OSP
   os_keypair:
@@ -46,7 +46,7 @@
     state: present
     name: atomic_host_instance
     image: atomic_host_image
-    key_name: centos
+    key_name: atomic
     timeout: 200
     flavor: m1.small
     floating_ips:

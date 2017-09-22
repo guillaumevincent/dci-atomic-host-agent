@@ -1,4 +1,4 @@
 ---
-- dci_job:
-    id: "{{ job_id }}"
-    status: 'failure'
+- name: A failure happened
+  fail:
+    msg: 'Something went wrong during the job. Please check the log'
