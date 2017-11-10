@@ -1,5 +1,5 @@
 ---
-- name: wait for ssh on atomic host
+- name: wait for ssh on rhel host
   command: >
     ssh -oBatchMode=yes -oStrictHostKeyChecking=no
     {{ SSH_USER }}@{{ SSH_HOST }} true

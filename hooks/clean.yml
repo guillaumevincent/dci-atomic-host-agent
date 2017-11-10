@@ -1,12 +1,12 @@
 ---
-- name: delete Atomic Host image
+- name: delete RHEL image
   os_image:
-    name: atomic_host_image
+    name: rhel_host_image
     state: absent
 
-- name: delete Atomic Host instance
+- name: delete RHEL instance
   os_server:
-    name: atomic_host_instance
+    name: rhel_host_instance
     state: absent
 
 - name: delete SSH_HOST entry in known_hosts
