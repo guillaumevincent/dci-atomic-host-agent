@@ -42,9 +42,9 @@
         msg: "{{ component }}"
 
     - block:
-        - include: dci/download.yml
+        - include_tasks: dci/download.yml
       rescue:
-        - include: dci/failure.yml
+        - include_tasks: dci/failure.yml
 
 - name: CLEAN
   hosts: localhost
@@ -52,9 +52,9 @@
     dci_status: 'pre-run'
   tasks:
     - block:
-        - include: hooks/clean.yml
+        - include_tasks: hooks/clean.yml
       rescue:
-        - include: dci/failure.yml
+        - include_tasks: dci/failure.yml
 
 - name: INSTALL
   hosts: localhost
@@ -62,9 +62,9 @@
     dci_status: 'pre-run'
   tasks:
     - block:
-        - include: hooks/install.yml
+        - include_tasks: hooks/install.yml
       rescue:
-        - include: dci/failure.yml
+        - include_tasks: dci/failure.yml
 
 - name: TESTS
   hosts: localhost
@@ -72,13 +72,13 @@
     dci_status: 'running'
   tasks:
     - block:
-        - include: dci/test.yml
+        - include_tasks: dci/test.yml
       rescue:
-        - include: dci/failure.yml
+        - include_tasks: dci/failure.yml
 
 - name: SUCCESS
   hosts: localhost
   vars:
     dci_status: 'success'
   tasks:
-    - include: dci/success.yml
+    - include_tasks: dci/success.yml

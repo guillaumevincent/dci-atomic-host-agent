@@ -24,3 +24,7 @@ After the installation you must set 4 variables with ansible `set_fact` command:
  
 Those variables are used to run official tests on your environment.
 We send those results to [https://www.distributed-ci.io](https://www.distributed-ci.io)
+
+## Run
+
+    source dcirc.sh && ansible-playbook -e "TOPIC_NAME=RHEL-8" dci-rhel-agent.yml

@@ -16,31 +16,19 @@
   shell: 'ssh-keygen -b 2048 -t rsa -f {{ SSH_PRIVATE_KEY_FILE }} -q -N ""'
   when: rhel_id_rsa.stat.exists == False
 
-- name: set SSH_PUBLIC_KEY_FILE
+- name: set RHEL info (SSH_USER, SSH_PORT, SSH_PUBLIC_KEY_FILE)
   set_fact:
+    SSH_USER: "{{ SSH_USER | default('cloud-user') }}"
+    SSH_PORT: "{{ SSH_PORT | default('22') }}"
     SSH_PUBLIC_KEY_FILE: "{{ SSH_PRIVATE_KEY_FILE }}.pub"
 
 - name: delete rhel ssh key in OSP
   os_keypair:
-    auth:
-      auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
-      username: "{{ lookup('env', 'OS_USERNAME') }}"
-      password: "{{ lookup('env', 'OS_PASSWORD') }}"
-      user_domain_name:  "{{ lookup('env', 'OS_USER_DOMAIN_NAME') }}"
-      project_domain_name:  "{{ lookup('env', 'OS_PROJECT_DOMAIN_NAME') }}"
-      project_name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
     state: absent
     name: rhel
 
 - name: create key in OSP for rhel
   os_keypair:
-    auth:
-      auth_url: "{{ lookup('env', 'OS_AUTH_URL') }}"
-      username: "{{ lookup('env', 'OS_USERNAME') }}"
-      password: "{{ lookup('env', 'OS_PASSWORD') }}"
-      user_domain_name:  "{{ lookup('env', 'OS_USER_DOMAIN_NAME') }}"
-      project_domain_name:  "{{ lookup('env', 'OS_PROJECT_DOMAIN_NAME') }}"
-      project_name: "{{ lookup('env', 'OS_PROJECT_NAME') }}"
     state: present
     name: rhel
     public_key_file: "{{ SSH_PUBLIC_KEY_FILE }}"
@@ -59,27 +47,41 @@
     security_groups: ['ssh']
     network: local
 
-- name: register system with subscription-manager
-  command: >
-    subscription-manager register
-    --activationkey="$RHSM_ACTIVATION_KEY"
-    --org="$RHSM_ORG_ID"
-    --force
-  environment:
+- name: add RHEL instance in host
+  add_host:
+    hostname: "rhel"
+    ansible_ssh_host: "{{ SSH_HOST }}"
+    ansible_ssh_user: "{{ SSH_USER }}"
+    ansible_ssh_port: "{{ SSH_PORT }}"
+
+- name: wait for ssh on rhel host
+  wait_for:
+    host: "{{ SSH_HOST }}"
+    port: "{{ SSH_PORT }}"
+    delay: 10
+    timeout: 60
+
+- name: get RHSM variables
+  set_fact:
     RHSM_ACTIVATION_KEY: "{{ lookup('env', 'RHSM_ACTIVATION_KEY') }}"
     RHSM_ORG_ID: "{{ lookup('env', 'RHSM_ORG_ID') }}"
-  register: result
-  until: result.rc == 0
-  retries: 3
-  delay: 5
-
-- name: attach to given pool id
-  command: subscription-manager attach --pool="$RHSM_POOL_ID"
-  environment:
     RHSM_POOL_ID: "{{ lookup('env', 'RHSM_POOL_ID') }}"
+
+- name: set Red Hat subscription
+  redhat_subscription:
+    state: present
+    activationkey: "{{RHSM_ACTIVATION_KEY}}"
+    org_id: "{{RHSM_ORG_ID}}"
+    pool_ids: "{{RHSM_POOL_ID}}"
+  become: yes
+  become_user: root
+  delegate_to: rhel
 
 - name: disable all repos
   command: subscription-manager repos --disable=*
+  become: yes
+  become_user: root
+  delegate_to: rhel
 
 - name: enable server, optional, and extras repos
   command: >
@@ -87,3 +89,6 @@
     --enable rhel-7-server-rpms
     --enable rhel-7-server-optional-rpms
     --enable rhel-7-server-extras-rpms
+  become: yes
+  become_user: root
+  delegate_to: rhel
