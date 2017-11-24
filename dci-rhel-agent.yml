@@ -72,16 +72,6 @@
     dci_status: 'running'
   tasks:
     - block:
-        - include: hooks/test.yml
-      rescue:
-        - include: dci/failure.yml
-
-- name: DCI TESTS
-  hosts: localhost
-  vars:
-    dci_status: 'running'
-  tasks:
-    - block:
         - include: dci/test.yml
       rescue:
         - include: dci/failure.yml

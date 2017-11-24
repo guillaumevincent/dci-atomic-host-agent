@@ -1,9 +1,0 @@
----
-- name: wait for ssh on rhel host
-  command: >
-    ssh -oBatchMode=yes -oStrictHostKeyChecking=no
-    {{ SSH_USER }}@{{ SSH_HOST }} true
-  register: result
-  until: result|success
-  retries: 10
-  delay: 9

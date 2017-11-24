@@ -58,3 +58,32 @@
     volume_size: 30
     security_groups: ['ssh']
     network: local
+
+- name: register system with subscription-manager
+  command: >
+    subscription-manager register
+    --activationkey="$RHSM_ACTIVATION_KEY"
+    --org="$RHSM_ORG_ID"
+    --force
+  environment:
+    RHSM_ACTIVATION_KEY: "{{ lookup('env', 'RHSM_ACTIVATION_KEY') }}"
+    RHSM_ORG_ID: "{{ lookup('env', 'RHSM_ORG_ID') }}"
+  register: result
+  until: result.rc == 0
+  retries: 3
+  delay: 5
+
+- name: attach to given pool id
+  command: subscription-manager attach --pool="$RHSM_POOL_ID"
+  environment:
+    RHSM_POOL_ID: "{{ lookup('env', 'RHSM_POOL_ID') }}"
+
+- name: disable all repos
+  command: subscription-manager repos --disable=*
+
+- name: enable server, optional, and extras repos
+  command: >
+    subscription-manager repos
+    --enable rhel-7-server-rpms
+    --enable rhel-7-server-optional-rpms
+    --enable rhel-7-server-extras-rpms

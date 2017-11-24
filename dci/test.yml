@@ -1,86 +1,10 @@
 ---
-- name: get RHSM variables
-  set_fact:
-    RHSM_ACTIVATION_KEY: "{{ lookup('env', 'RHSM_ACTIVATION_KEY') }}"
-    RHSM_ORG_ID: "{{ lookup('env', 'RHSM_ORG_ID') }}"
+- name: wait for ssh on rhel host
+  command: >
+    ssh -oBatchMode=yes -oStrictHostKeyChecking=no
+    {{ SSH_USER }}@{{ SSH_HOST }} true
+  register: result
+  until: result|success
+  retries: 10
+  delay: 9
 
-
-- name: Set Red Hat Subscription
-  redhat_subscription:
-    state: present
-    activationkey: '{{RHSM_ACTIVATION_KEY}}'
-    org_id: '{{RHSM_ORG_ID}}'
-    autosubscribe: true
-
-#- name: delete rhel-host-tests folder
-#  file:
-#    state: absent
-#    path: '/tmp/rhel-host-tests'
-#
-#- name: download rhel-host-tests
-#  git:
-#    repo: "{{ test['repository'] }}"
-#    dest: '/tmp/rhel-host-tests'
-#    version: "{{ test['version'] }}"
-#
-#- name: copy ansible.cfg
-#  copy:
-#    src: ansible.cfg
-#    dest: /tmp/rhel-host-tests/ansible.cfg
-#
-#- name: get RHSM variables
-#  set_fact:
-#    RHSM_USERNAME: "{{ lookup('env', 'RHSM_USERNAME') }}"
-#    RHSM_PASSWORD: "{{ lookup('env', 'RHSM_PASSWORD') }}"
-#    RHSM_ACTIVATION_KEY: "{{ lookup('env', 'RHSM_ACTIVATION_KEY') }}"
-#    RHSM_ORG_ID: "{{ lookup('env', 'RHSM_ORG_ID') }}"
-#
-#- name: create RHSM file
-#  template:
-#    src: subscription_data.csv.j2
-#    dest: /tmp/rhel-host-tests/roles/redhat_subscription/files/subscription_data.csv
-#  when: RHSM_USERNAME != '' or RHSM_ACTIVATION_KEY!= ''
-#
-#- name: run tests
-#  shell: "ansible-playbook --user='{{ SSH_USER }}' --private-key='{{ SSH_PRIVATE_KEY_FILE }}' --inventory-file='{{ SSH_HOST }}:{{ SSH_PORT | default(22) }},' tests/{{ item }}/main.yml"
-#  args:
-#    chdir: /tmp/rhel-host-tests
-#  environment:
-#    JUNIT_OUTPUT_DIR: '/tmp/{{ job_id }}'
-#  with_items:
-##    - admin-unlock
-##    - docker
-##    - docker-build-httpd
-##    - docker-swarm
-##    - images_cve_scanner
-#    - improved-sanity-test
-##    - k8-cluster
-##    - openshift-ansible-test
-##    - pkg-layering
-##    - rpm-ostree
-##    - system-containers
-##    - unique-machine-id
-#  ignore_errors: True
-#
-#- name: combine JUnit results into single file
-#  shell: "xunitmerge /tmp/{{ job_id }}/*.xml /tmp/{{ job_id }}/junit.xml"
-#
-#- name: upload the results
-#  dci_file:
-#    job_id: '{{ job_id }}'
-#    path: "/tmp/{{ job_id }}/junit.xml"
-#    mime: 'application/junit'
-#    name: 'RHEL tests'
-#
-#- name: retrieve the job results
-#  dci_job:
-#    id: '{{ job_id }}'
-#    embed:
-#      - results
-#  register: job_results
-#  delegate_to: localhost
-#
-#- name: test fail
-#  fail:
-#    msg: 'Something went wrong during the job. Please check the log'
-#  when: (job_results.job.results[0].failures  > 0) or (job_results.job.results[0].errors > 0)
